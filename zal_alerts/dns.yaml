@@ -1,0 +1,34 @@
+groups:
+- name: zal
+  rules:
+  - alert: CoreDNSOOMKillsHighCustom
+    expr: sum_over_time(kube_pod_container_status_last_terminated_reason{pod=~"dns-default.*", reason="OOMKilled"}[5m]) > 3
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      description:  Pods in openshift-dns got OOMKilled
+  - alert: CoreDNSErrorsHighCustom
+    expr: |
+      (sum(rate(coredns_dns_response_rcode_count_total{rcode="SERVFAIL"}[5m]))
+        /
+      sum(rate(coredns_dns_response_rcode_count_total[5m])))
+      > 0.05
+    for: 5m
+    labels:
+      severity: critical
+    annotations:
+      description:  CoreDNS is returning many SERVFAIL of requests. 
+      message: CoreDNS is returning SERVFAIL for {{ $value | humanizePercentage}} of requests.
+  - alert: CoreDNSNXDOMAINErrorsHighCustom
+    expr: |
+      (sum(rate(coredns_dns_response_rcode_count_total{rcode="NXDOMAIN"}[5m]))
+        /
+      sum(rate(coredns_dns_response_rcode_count_total[5m])))
+      > 0.05
+    for: 5m
+    labels:
+      severity: critical
+    annotations:
+      description:  CoreDNS is returning many NXDOMAIN of requests. 
+      message: CoreDNS is returning NXDOMAIN for {{ $value | humanizePercentage}} of requests.

@@ -1,0 +1,47 @@
+groups:
+- name: zal
+  rules:
+  - alert: MultipleContainersOOMKilledCustom
+    expr: |
+      sum(max by(namespace, container, pod) (increase(kube_pod_container_status_restarts_total[60m]))
+      and max by(namespace, container, pod) (kube_pod_container_status_last_terminated_reason{reason="OOMKilled"})
+      == 1) > 15
+    for: 15m
+    labels:
+      severity: critical
+    annotations:
+      description: Multiple containers were out of memory killed within the past 15 min.
+      message: Multiple containers were out of memory killed within the past 15 minutes.
+  - alert: KubeNodeNotReadyCustom
+    expr: |
+      kube_node_status_condition{job="kube-state-metrics",condition="Ready",status="true"} == 0
+    for: 30m
+    labels:
+      severity: critical
+    annotations:
+      description: Node has been unready for more than 30 minutes.
+      message: '{{ $labels.node }} has been unready for more than 30 minutes.'
+  - alert: KubePodCrashLoopingCustom
+    expr: |
+      rate(kube_pod_container_status_restarts_total{job="kube-state-metrics"}[15m]) * 60 * 5 > 0
+    for: 60m
+    labels:
+      severity: critical
+    annotations:
+      description: Pod is restarting frequently.
+      message: Pod {{ $labels.namespace }}/{{ $labels.pod }} ({{ $labels.container }}) is restarting {{ printf "%.2f" $value }} times / 15 minutes.
+  - alert: KubePodNotReadyCustom
+    expr: |
+      sum by (namespace, pod) (
+        max by(namespace, pod) (
+          kube_pod_status_phase{namespace=~"(openshift-.*|kube-.*|default|logging)",job="kube-state-metrics", phase=~"Pending|Unknown"}
+        ) * on(namespace, pod) group_left(owner_kind) topk by(namespace, pod) (
+          1, max by(namespace, pod, owner_kind) (kube_pod_owner{owner_kind!="Job"})
+        )
+      ) > 0
+    for: 30m
+    labels:
+      severity: critical
+    annotations:
+      description: Pod has been in a non-ready state for more than 30 minutes.
+      message: Pod {{ $labels.namespace }}/{{ $labels.pod }} has been in a non-ready state for longer than 30 minutes.

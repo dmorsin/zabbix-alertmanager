@@ -1,0 +1,6 @@
+groups:
+- name: zal
+  rules:
+  - expr: |
+      max_over_time(sum(apiserver_current_inflight_requests{apiserver=~"openshift-apiserver|kube-apiserver"}) by (apiserver,requestKind)[2m:])
+    record: cluster:apiserver_current_inflight_requests:sum:max_over_time:2m

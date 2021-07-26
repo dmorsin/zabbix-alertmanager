@@ -1,0 +1,9 @@
+groups:
+- name: zal
+  rules:
+  - expr: |
+      max  (network_attachment_definition_enabled_instance_up) by (networks)
+    record: cluster:network_attachment_definition_enabled_instance_up:max
+  - expr: |
+      max  (network_attachment_definition_instances) by (networks)
+    record: cluster:network_attachment_definition_instances:max

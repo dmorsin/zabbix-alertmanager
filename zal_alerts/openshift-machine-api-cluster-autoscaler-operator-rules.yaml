@@ -1,0 +1,12 @@
+groups:
+- name: zal
+  rules:
+  - alert: ClusterAutoscalerOperatorDown
+    annotations:
+      message: cluster-autoscaler-operator has disappeared from Prometheus target
+        discovery.
+    expr: |
+      absent(up{job="cluster-autoscaler-operator"} == 1)
+    for: 5m
+    labels:
+      severity: critical

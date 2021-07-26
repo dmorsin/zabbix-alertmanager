@@ -1,0 +1,86 @@
+groups:
+- name: zal
+  rules:
+  - alert: ClusterVersionOperatorDown
+    annotations:
+      message: Cluster version operator has disappeared from Prometheus target discovery.
+        Operator may be down or disabled, cluster will not be kept up to date and
+        upgrades will not be possible.
+    expr: |
+      absent(up{job="cluster-version-operator"} == 1)
+    for: 10m
+    labels:
+      severity: critical
+  - alert: CannotRetrieveUpdates
+    annotations:
+      message: Cluster version operator has not retrieved updates in {{ $value |
+        humanizeDuration }}. Failure reason {{ with $cluster_operator_conditions
+        := "cluster_operator_conditions" | query}}{{range $value := .}}{{if and
+        (eq (label "name" $value) "version") (eq (label "condition" $value) "RetrievedUpdates")
+        (eq (label "endpoint" $value) "metrics") (eq (value $value) 0.0)}}{{label
+        "reason" $value}} {{end}}{{end}}{{end}}. {{ with $console_url := "console_url"
+        | query }}{{ if ne (len (label "url" (first $console_url ) ) ) 0}} For more
+        information refer to {{ label "url" (first $console_url ) }}/settings/cluster/.{{
+        end }}{{ end }}
+    expr: |
+      (time()-cluster_version_operator_update_retrieval_timestamp_seconds) >= 3600 and ignoring(condition, name, reason) cluster_operator_conditions{name="version", condition="RetrievedUpdates", endpoint="metrics", reason!="NoChannel"}
+    labels:
+      severity: critical
+  - alert: UpdateAvailable
+    annotations:
+      message: Your upstream update recommendation service recommends you update
+        your cluster.  For more information refer to 'oc adm upgrade'{{ with $console_url
+        := "console_url" | query }}{{ if ne (len (label "url" (first $console_url
+        ) ) ) 0}} or {{ label "url" (first $console_url ) }}/settings/cluster/{{
+        end }}{{ end }}.
+    expr: |
+      cluster_version_available_updates > 0
+    labels:
+      severity: info
+- name: cluster-operators
+  rules:
+  - alert: ClusterNotUpgradeable
+    annotations:
+      message: One or more cluster operators have been blocking minor version cluster
+        upgrades for at least an hour for reason {{ with $cluster_operator_conditions
+        := "cluster_operator_conditions" | query}}{{range $value := .}}{{if and
+        (eq (label "name" $value) "version") (eq (label "condition" $value) "Upgradeable")
+        (eq (label "endpoint" $value) "metrics") (eq (value $value) 0.0) (ne (len
+        (label "reason" $value)) 0) }}{{label "reason" $value}}.{{end}}{{end}}{{end}}
+        {{ with $console_url := "console_url" | query }}{{ if ne (len (label "url"
+        (first $console_url ) ) ) 0}} For more information refer to {{ label "url"
+        (first $console_url ) }}/settings/cluster/.{{ end }}{{ end }}
+    expr: |
+      max by (name, condition, endpoint) (cluster_operator_conditions{name="version", condition="Upgradeable", endpoint="metrics"} == 0)
+    for: 60m
+    labels:
+      severity: warning
+  - alert: ClusterOperatorDown
+    annotations:
+      message: Cluster operator {{ $labels.name }} has not been available for 10
+        minutes. Operator may be down or disabled, cluster will not be kept up to
+        date and upgrades will not be possible.
+    expr: |
+      cluster_operator_up{job="cluster-version-operator"} == 0
+    for: 10m
+    labels:
+      severity: critical
+  - alert: ClusterOperatorDegraded
+    annotations:
+      message: Cluster operator {{ $labels.name }} has been degraded for 10 minutes.
+        Operator is degraded because {{ $labels.reason }} and cluster upgrades will
+        be unstable.
+    expr: |
+      cluster_operator_conditions{job="cluster-version-operator", condition="Degraded"} == 1
+    for: 10m
+    labels:
+      severity: critical
+  - alert: ClusterOperatorFlapping
+    annotations:
+      message: Cluster operator {{ $labels.name }} up status is changing often.
+        This might cause upgrades to be unstable.
+    expr: |
+      changes(cluster_operator_up{job="cluster-version-operator"}[2m]) > 2
+    for: 10m
+    labels:
+      severity: warning

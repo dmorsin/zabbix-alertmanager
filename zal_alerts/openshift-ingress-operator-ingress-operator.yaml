@@ -1,0 +1,18 @@
+groups:
+- name: zal
+  rules:
+  - alert: HAProxyReloadFail
+    annotations:
+      message: HAProxy reloads have failed on {{ $labels.pod }}. Router is not respecting
+        recently created or modified routes
+    expr: increase(template_router_reload_fails[5m]) > 0
+    for: 5m
+    labels:
+      severity: critical
+  - alert: HAProxyDown
+    annotations:
+      message: HAProxy metrics are reporting that the router is down
+    expr: haproxy_up == 0
+    for: 5m
+    labels:
+      severity: critical

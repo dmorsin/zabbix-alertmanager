@@ -1,0 +1,10 @@
+groups:
+- name: zal
+  rules:
+  - alert: FailingOperator
+    annotations:
+      message: Failed to install Operator {{ $labels.name }} version {{ $labels.version
+        }}. Reason-{{ $labels.reason }}
+    expr: csv_abnormal{phase="Failed"}
+    labels:
+      severity: warning
