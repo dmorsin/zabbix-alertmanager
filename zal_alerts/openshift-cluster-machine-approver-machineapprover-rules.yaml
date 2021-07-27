@@ -1,0 +1,19 @@
+groups:
+- name: zal
+  rules:
+  - alert: ClusterMachineApproverDown
+    annotations:
+      message: ClusterMachineApprover has disappeared from Prometheus target discovery.
+    expr: |
+      absent(up{job="machine-approver"} == 1)
+    for: 10m
+    labels:
+      severity: critical
+  - alert: MachineApproverMaxPendingCSRsReached
+    annotations:
+      message: max pending CSRs threshold reached.
+    expr: |
+      mapi_current_pending_csr > mapi_max_pending_csr
+    for: 5m
+    labels:
+      severity: warning

@@ -1,0 +1,11 @@
+groups:
+- name: zal
+  rules:
+  - alert: ImageRegistryStorageReconfigured
+    annotations:
+      message: |
+        Image Registry Storage configuration has changed in the last 30
+        minutes. This change may have caused data loss.
+    expr: increase(image_registry_operator_storage_reconfigured_total[30m]) > 0
+    labels:
+      severity: warning

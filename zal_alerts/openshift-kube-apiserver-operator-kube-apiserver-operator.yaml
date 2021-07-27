@@ -1,0 +1,11 @@
+groups:
+- name: zal
+  rules:
+  - alert: TechPreviewNoUpgrade
+    annotations:
+      message: Cluster has enabled tech preview features that will prevent upgrades.
+    expr: |
+      cluster_feature_set{name!="", namespace="openshift-kube-apiserver-operator"} == 0
+    for: 10m
+    labels:
+      severity: warning

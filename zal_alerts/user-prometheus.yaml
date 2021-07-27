@@ -1,0 +1,10 @@
+groups:
+- name: zal
+  rules:
+  - alert: UserPrometheusOOMKillsCustom
+    expr: sum_over_time(kube_pod_container_status_last_terminated_reason{pod=~"prometheus.*",namespace="openshift-user-workload-monitoring",reason="OOMKilled"}[5m]) > 1
+    for: 1m
+    labels:
+      severity: warning
+    annotations:
+      description:  User Prometheus pods in openshift-user-workload-monitoring got OOMKilled

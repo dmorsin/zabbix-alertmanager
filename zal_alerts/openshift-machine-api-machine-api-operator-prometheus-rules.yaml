@@ -1,0 +1,42 @@
+groups:
+- name: zal
+  rules:
+  - alert: MachineWithoutValidNode
+    annotations:
+      message: machine {{ $labels.name }} does not have valid node reference
+    expr: |
+      (mapi_machine_created_timestamp_seconds unless on(node) kube_node_info) > 0
+    for: 60m
+    labels:
+      severity: warning
+- name: machine-with-no-running-phase
+  rules:
+  - alert: MachineWithNoRunningPhase
+    annotations:
+      message: 'machine {{ $labels.name }} is in phase: {{ $labels.phase }}'
+    expr: |
+      (mapi_machine_created_timestamp_seconds{phase!="Running"}) > 0
+    for: 60m
+    labels:
+      severity: warning
+- name: machine-api-operator-metrics-collector-up
+  rules:
+  - alert: MachineAPIOperatorMetricsCollectionFailing
+    annotations:
+      message: 'machine api operator metrics collection is failing. For more details:  oc
+        logs <machine-api-operator-pod-name> -n openshift-machine-api'
+    expr: |
+      mapi_mao_collector_up == 0
+    for: 5m
+    labels:
+      severity: critical
+- name: machine-api-operator-down
+  rules:
+  - alert: MachineAPIOperatorDown
+    annotations:
+      message: machine api operator is down
+    expr: |
+      absent(up{job="machine-api-operator"} == 1)
+    for: 5m
+    labels:
+      severity: critical

@@ -1,0 +1,27 @@
+groups:
+- name: zal
+  rules:
+  - alert: HAProxyOOMKillsHighCustom
+    expr: sum_over_time(kube_pod_container_status_last_terminated_reason{pod=~"router-default.*", reason="OOMKilled"}[5m]) > 3
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      description:  HAProxy Pods got OOMKilled
+  - alert: HAProxyErrorRateHighCustom
+    expr: (sum by(service) (rate(haproxy_backend_http_responses_total{code="5xx"}[10m])) / sum by(service) (rate(haproxy_backend_http_responses_total[10m]))) * 100 > 15
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: HAProxy server response errors (instance {{ $labels.instance }})
+      description: "Too many response errors to {{ $labels.service }} service (> 15%).\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"
+  - alert: HAProxyLoadHighCustom
+    expr: sum by (instance, route) (rate(haproxy_backend_current_queue[5m])) > 0
+    for: 5m
+    labels:
+      severity: critical
+    annotations:
+      summary: HAProxy pending requests (instance {{ $labels.instance }})
+      description: 'Some HAProxy requests are pending on route {{ $labels.route }}. Backend: {{ $labels.backend }}\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}'
+

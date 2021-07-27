@@ -1,0 +1,10 @@
+groups:
+- name: zal
+  rules:
+  - alert: DeadMansSwitch
+    annotations:
+      description: "Test_description"
+      summary: "test_summary"
+    expr: vector(1)
+    labels:
+      severity: critical

@@ -1,0 +1,18 @@
+groups:
+- name: zal
+  rules:
+  - alert: SDNOOMKillsCustom
+    expr: sum_over_time(kube_pod_container_status_last_terminated_reason{pod=~"sdn.*|ovs.*", reason="OOMKilled"}[5m]) > 1
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      description:  Pods in openshift-sdn got OOMKilled
+  - alert: ClusterProxyApplySlowCustom
+    expr: |
+      histogram_quantile(0.95, sum(rate(kubeproxy_sync_proxy_rules_duration_seconds_bucket[60m])) by (le)) > 40
+    labels:
+      severity: critical
+    annotations:
+      message: During last hour cluster is taking too long, on average, to apply kubernetes service rules to iptables.
+      description:  During last hour cluster is taking too long to apply kubernetes service rules to iptables.
